@@ -31,6 +31,26 @@
 
 #define OFFSET(x, y, m) (((x)*(m)) + (y))
 
+void tune_initialize()
+{
+    #pragma tuner initialize init
+    int n, m;
+    
+    n = 4096;
+    m = 4096;
+
+    double *restrict A    = (double*)malloc(sizeof(double)*n*m);
+    double *restrict Anew = (double*)malloc(sizeof(double)*n*m);
+    memset(A, 0, n * m * sizeof(double));
+    memset(Anew, 0, n * m * sizeof(double));
+
+    for(int i = 0; i < m; i++){
+        A[i] = 1.0;
+        Anew[i] = 1.0;
+    }
+    #pragma tuner stop
+}
+
 void initialize(double *restrict A, double *restrict Anew, int m, int n)
 {
     memset(A, 0, n * m * sizeof(double));
@@ -45,8 +65,10 @@ void initialize(double *restrict A, double *restrict Anew, int m, int n)
 
 double calcNext(double *restrict A, double *restrict Anew, int m, int n)
 {
+    #pragma tuner start calcNext
     double error = 0.0;
-    #pragma acc parallel loop reduction(max:error) copyin(A[:n*m]) copyout(Anew[:n*m]) tile(32,4)
+    #pragma acc parallel num_gangs(ngangs) vector_length(nthreads) copyin(A[:n*m]) copyout(Anew[:n*m])
+    #pragma acc loop reduction(max:error) tile(tile_x,tile_y)
     for( int j = 1; j < n-1; j++)
     {
         for( int i = 1; i < m-1; i++ )
@@ -56,12 +78,15 @@ double calcNext(double *restrict A, double *restrict Anew, int m, int n)
             error = fmax( error, fabs(Anew[OFFSET(j, i, m)] - A[OFFSET(j, i , m)]));
         }
     }
+    #pragma tuner stop
     return error;
 }
         
 void swap(double *restrict A, double *restrict Anew, int m, int n)
 {
-    #pragma acc parallel loop copyin(Anew[:n*m]) copyout(A[:n*m]) tile(32,4)
+    #pragma tuner start swap
+    #pragma acc parallel num_gangs(ngangs) vector_length(nthreads) copyin(Anew[:n*m]) copyout(A[:n*m])
+    #pragma acc loop tile(32,4)
     for( int j = 1; j < n-1; j++)
     {
         for( int i = 1; i < m-1; i++ )
@@ -69,6 +94,7 @@ void swap(double *restrict A, double *restrict Anew, int m, int n)
             A[OFFSET(j, i, m)] = Anew[OFFSET(j, i, m)];    
         }
     }
+    #pragma tuner stop
 }
 
 void deallocate(double *restrict A, double *restrict Anew)
