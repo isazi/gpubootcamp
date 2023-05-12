@@ -28,12 +28,15 @@ for function in signatures.keys():
     tune_params["tile_x"] = [2**i for i in range(0, 11)]
     tune_params["tile_y"] = [2**i for i in range(0, 11)]
 
+    restrictions = ["tile_x * tile_y <= 1024"]
+
     tune_kernel(
         function,
         kernel_string,
         0,
         [],
         tune_params,
+        restrictions=restrictions,
         compiler_options=["-fast", "-acc=gpu"],
         compiler="nvc++",
     )
