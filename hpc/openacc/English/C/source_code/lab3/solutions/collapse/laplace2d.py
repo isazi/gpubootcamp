@@ -30,8 +30,8 @@ for function in signatures.keys():
         function,
         kernel_string,
         0,
-        None,
+        [],
         tune_params,
         compiler_options=["-fast", "-acc=gpu"],
-        compiler="nvc",
+        compiler="nvc++",
     )
