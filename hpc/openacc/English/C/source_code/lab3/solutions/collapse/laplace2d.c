@@ -33,6 +33,7 @@
 
 void initialize(double *restrict A, double *restrict Anew, int m, int n)
 {
+    #pragma tuner initialize init
     memset(A, 0, n * m * sizeof(double));
     memset(Anew, 0, n * m * sizeof(double));
 
@@ -40,11 +41,12 @@ void initialize(double *restrict A, double *restrict Anew, int m, int n)
         A[i] = 1.0;
         Anew[i] = 1.0;
     }
-
+    #pragma tuner stop
 }
 
 double calcNext(double *restrict A, double *restrict Anew, int m, int n)
 {
+    #pragma tuner start calcNext
     double error = 0.0;
     #pragma acc parallel loop reduction(max:error) copyin(A[:n*m]) copyout(Anew[:n*m]) collapse(2)
     for( int j = 1; j < n-1; j++)
@@ -56,11 +58,13 @@ double calcNext(double *restrict A, double *restrict Anew, int m, int n)
             error = fmax( error, fabs(Anew[OFFSET(j, i, m)] - A[OFFSET(j, i , m)]));
         }
     }
+    #pragma tuner stop
     return error;
 }
 
 void swap(double *restrict A, double *restrict Anew, int m, int n)
 {
+    #pragma tuner start swap
     #pragma acc parallel loop copyin(Anew[:n*m]) copyout(A[:n*m]) collapse(2)
     for( int j = 1; j < n-1; j++)
     {
@@ -69,6 +73,7 @@ void swap(double *restrict A, double *restrict Anew, int m, int n)
             A[OFFSET(j, i, m)] = Anew[OFFSET(j, i, m)];
         }
     }
+    #pragma tuner stop
 }
 
 void deallocate(double *restrict A, double *restrict Anew)
