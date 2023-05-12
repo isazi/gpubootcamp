@@ -68,7 +68,7 @@ double calcNext(double *restrict A, double *restrict Anew, int m, int n)
     #pragma tuner start calcNext
     double error = 0.0;
     #pragma acc parallel num_gangs(ngangs) vector_length(nthreads) copyin(A[:n*m]) copyout(Anew[:n*m])
-    #pragma acc loop reduction(max:error) tile(tile_x,tile_y)
+    #pragma acc loop reduction(max:error) tile(tile_x, tile_y)
     for( int j = 1; j < n-1; j++)
     {
         for( int i = 1; i < m-1; i++ )
@@ -86,7 +86,7 @@ void swap(double *restrict A, double *restrict Anew, int m, int n)
 {
     #pragma tuner start swap
     #pragma acc parallel num_gangs(ngangs) vector_length(nthreads) copyin(Anew[:n*m]) copyout(A[:n*m])
-    #pragma acc loop tile(32,4)
+    #pragma acc loop tile(tile_x, tile_y)
     for( int j = 1; j < n-1; j++)
     {
         for( int i = 1; i < m-1; i++ )
