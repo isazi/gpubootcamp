@@ -31,9 +31,16 @@
 
 #define OFFSET(x, y, m) (((x)*(m)) + (y))
 
-void initialize(double *restrict A, double *restrict Anew, int m, int n)
+void tune_initialize()
 {
     #pragma tuner initialize init
+    int n, m;
+    
+    n = 4096;
+    m = 4096;
+
+    double *restrict A    = (double*)malloc(sizeof(double)*n*m);
+    double *restrict Anew = (double*)malloc(sizeof(double)*n*m);
     memset(A, 0, n * m * sizeof(double));
     memset(Anew, 0, n * m * sizeof(double));
 
@@ -42,6 +49,17 @@ void initialize(double *restrict A, double *restrict Anew, int m, int n)
         Anew[i] = 1.0;
     }
     #pragma tuner stop
+}
+
+void initialize(double *restrict A, double *restrict Anew, int m, int n)
+{
+    memset(A, 0, n * m * sizeof(double));
+    memset(Anew, 0, n * m * sizeof(double));
+
+    for(int i = 0; i < m; i++){
+        A[i] = 1.0;
+        Anew[i] = 1.0;
+    }
 }
 
 double calcNext(double *restrict A, double *restrict Anew, int m, int n)
