@@ -2,7 +2,7 @@
 
 CC := nvc++
 CFLAGS := -O3 -w
-ACCFLAGS := -ta=tesla:managed -Minfo=accel
+ACCFLAGS := -fast -acc=gpu -gpu=managed -Minfo=accel
 
 miniWeather: miniWeather_openacc.cpp
 	${CC} ${CFLAGS} ${ACCFLAGS} -o miniWeather miniWeather_openacc.cpp 
