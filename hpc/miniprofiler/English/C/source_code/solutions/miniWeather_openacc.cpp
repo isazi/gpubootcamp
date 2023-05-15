@@ -23,20 +23,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
 {
-  ///////////////////////////////////////////////////////////////////////////////////////
-  // BEGIN USER-CONFIGURABLE PARAMETERS
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //The x-direction length is twice as long as the z-direction length
-  //So, you'll want to have nx_glob be twice as large as nz_glob
-  nx_glob = 40;      //Number of total cells in the x-dirction
-  nz_glob = 20;      //Number of total cells in the z-dirction
-  sim_time = 1000;   //How many seconds to run the simulation
-  output_freq = 100; //How frequently to output data to file (in seconds)
-  ///////////////////////////////////////////////////////////////////////////////////////
-  // END USER-CONFIGURABLE PARAMETERS
-  ///////////////////////////////////////////////////////////////////////////////////////
-
-  if (argc == 4)
+   if (argc == 4)
   {
     printf("The arguments supplied are %s %s %s\n", argv[1], argv[2], argv[3]);
     nx_glob = atoi(argv[1]);
@@ -163,7 +150,7 @@ void semi_discrete_step(double *state_init, double *state_forcing, double *state
 // TODO: THREAD ME
 /////////////////////////////////////////////////
 //Apply the tendencies to the fluid state
-#pragma tuner start semi_discrete_step
+#pragma tuner start semi_discrete_step 
 #pragma acc parallel default(present)
 #pragma acc loop collapse(3)
   for (int ll = 0; ll < NUM_VARS; ll++)

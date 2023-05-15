@@ -122,6 +122,11 @@ void init()
   int i, k, ii, kk, ll, inds, i_end;
   double x, z, r, u, w, t, hr, ht, nper;
 
+  nx_glob = 40;      //Number of total cells in the x-dirction
+  nz_glob = 20;      //Number of total cells in the z-dirction
+  sim_time = 1000;   //How many seconds to run the simulation
+  output_freq = 100; //How frequently to output data to file (in seconds)
+
   //Set the cell grid size
   dx = xlen / nx_glob;
   dz = zlen / nz_glob;
