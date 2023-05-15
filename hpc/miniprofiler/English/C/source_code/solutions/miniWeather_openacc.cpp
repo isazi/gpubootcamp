@@ -134,13 +134,11 @@ int main(int argc, char **argv)
   }
 
   nvtxRangePushA("Total");
-#pragma tuner initialize init
   init();
 
 #pragma acc data copyin(state_tmp[(nz + 2 * hs) * (nx + 2 * hs) * NUM_VARS], hy_dens_cell[nz + 2 * hs], hy_dens_theta_cell[nz + 2 * hs], hy_dens_int[nz + 1], hy_dens_theta_int[nz + 1], hy_pressure_int[nz + 1]) \
     create(flux[(nz + 1) * (nx + 1) * NUM_VARS], tend[nz * nx * NUM_VARS])                                                                                                                                        \
         copy(state [0:(nz + 2 * hs) * (nx + 2 * hs) * NUM_VARS])
-#pragma tuner stop
   {
     //Output the initial state
     //output(state, etime);
