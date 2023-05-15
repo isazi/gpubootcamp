@@ -164,7 +164,7 @@ void semi_discrete_step(double *state_init, double *state_forcing, double *state
 /////////////////////////////////////////////////
 //Apply the tendencies to the fluid state
 #pragma tuner start semi_discrete_step
-#pragma acc parallel private(inds, indt) default(present)
+#pragma acc parallel default(present)
 #pragma acc loop collapse(3)
   for (int ll = 0; ll < NUM_VARS; ll++)
   {
