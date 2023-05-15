@@ -249,7 +249,8 @@ void semi_discrete_step(double *state_init, double *state_forcing, double *state
 // TODO: THREAD ME
 /////////////////////////////////////////////////
 //Apply the tendencies to the fluid state
-#pragma acc parallel loop collapse(3) private(inds, indt) default(present)
+#pragma acc parallel private(inds, indt) default(present)
+#pragma acc loop collapse(3)
   for (ll = 0; ll < NUM_VARS; ll++)
   {
     for (k = 0; k < nz; k++)
@@ -278,7 +279,8 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
   // TODO: THREAD ME
   /////////////////////////////////////////////////
   //Compute fluxes in the x-direction for each cell
-#pragma acc parallel loop collapse(2) private(ll, s, inds, stencil, vals, d3_vals, r, u, w, t, p) default(present)
+#pragma acc parallel private(ll, s, inds, stencil, vals, d3_vals, r, u, w, t, p) default(present)
+#pragma acc loop collapse(2)
   for (k = 0; k < nz; k++)
   {
     for (i = 0; i < nx + 1; i++)
@@ -316,7 +318,8 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
 // TODO: THREAD ME
 /////////////////////////////////////////////////
 //Use the fluxes to compute tendencies for each cell
-#pragma acc parallel loop collapse(3) private(indt, indf1, indf2) default(present)
+#pragma acc parallel private(indt, indf1, indf2) default(present)
+#pragma acc  loop collapse(3)
   for (ll = 0; ll < NUM_VARS; ll++)
   {
     for (k = 0; k < nz; k++)
@@ -346,7 +349,8 @@ void compute_tendencies_z(double *state, double *flux, double *tend)
 // TODO: THREAD ME
 /////////////////////////////////////////////////
 //Compute fluxes in the x-direction for each cell
-#pragma acc parallel loop collapse(2) private(ll, s, inds, stencil, vals, d3_vals, r, u, w, t, p) default(present)
+#pragma acc parallel private(ll, s, inds, stencil, vals, d3_vals, r, u, w, t, p) default(present)
+#pragma acc loop collapse(2)
   for (k = 0; k < nz + 1; k++)
   {
     for (i = 0; i < nx; i++)
@@ -384,7 +388,8 @@ void compute_tendencies_z(double *state, double *flux, double *tend)
 // TODO: THREAD ME
 /////////////////////////////////////////////////
 //Use the fluxes to compute tendencies for each cell
-#pragma acc parallel loop collapse(3) private(indt, indf1, indf2) default(present)
+#pragma acc parallel private(indt, indf1, indf2) default(present)
+#pragma acc loop collapse(3)
   for (ll = 0; ll < NUM_VARS; ll++)
   {
     for (k = 0; k < nz; k++)
@@ -410,7 +415,8 @@ void set_halo_values_x(double *state)
   int k, ll, ind_r, ind_u, ind_t, i;
   double z;
 
-#pragma acc parallel loop collapse(2) default(present)
+#pragma acc parallel default(present)
+#pragma acc loop collapse(2)
   for (ll = 0; ll < NUM_VARS; ll++)
   {
     for (k = 0; k < nz; k++)
@@ -453,7 +459,8 @@ void set_halo_values_z(double *state)
 /////////////////////////////////////////////////
 // TODO: THREAD ME
 /////////////////////////////////////////////////
-#pragma acc parallel loop private(x, xloc, mnt_deriv) default(present)
+#pragma acc parallel private(x, xloc, mnt_deriv) default(present)
+#pragma acc  loop
   for (ll = 0; ll < NUM_VARS; ll++)
   {
     for (i = 0; i < nx + 2 * hs; i++)
