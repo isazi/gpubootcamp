@@ -32,6 +32,6 @@ for function in signatures.keys():
         0,
         [],
         tune_params,
-        compiler_options=["-fast", "-acc=gpu"],
+        compiler_options=["-fast", "-acc=gpu", "-gpu=managed"],
         compiler="nvc++",
     )
