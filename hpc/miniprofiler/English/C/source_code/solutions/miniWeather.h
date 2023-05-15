@@ -116,3 +116,146 @@ double dmin(double a, double b)
     return b;
   }
 };
+
+void init()
+{
+  int i, k, ii, kk, ll, inds, i_end;
+  double x, z, r, u, w, t, hr, ht, nper;
+
+  //Set the cell grid size
+  dx = xlen / nx_glob;
+  dz = zlen / nz_glob;
+
+  nranks = 1;
+  myrank = 0;
+
+  // For simpler version, replace i_beg = 0, nx = nx_glob, left_rank = 0, right_rank = 0;
+
+  nper = ((double)nx_glob) / nranks;
+  i_beg = round(nper * (myrank));
+  i_end = round(nper * ((myrank) + 1)) - 1;
+  nx = i_end - i_beg + 1;
+  left_rank = myrank - 1;
+  if (left_rank == -1)
+    left_rank = nranks - 1;
+  right_rank = myrank + 1;
+  if (right_rank == nranks)
+    right_rank = 0;
+
+  ////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////
+  // YOU DON'T NEED TO ALTER ANYTHING BELOW THIS POINT IN THE CODE
+  ////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////
+
+  k_beg = 0;
+  nz = nz_glob;
+
+  //Allocate the model data
+  state = (double *)malloc((nx + 2 * hs) * (nz + 2 * hs) * NUM_VARS * sizeof(double));
+  state_tmp = (double *)malloc((nx + 2 * hs) * (nz + 2 * hs) * NUM_VARS * sizeof(double));
+  flux = (double *)malloc((nx + 1) * (nz + 1) * NUM_VARS * sizeof(double));
+  tend = (double *)malloc(nx * nz * NUM_VARS * sizeof(double));
+  hy_dens_cell = (double *)malloc((nz + 2 * hs) * sizeof(double));
+  hy_dens_theta_cell = (double *)malloc((nz + 2 * hs) * sizeof(double));
+  hy_dens_int = (double *)malloc((nz + 1) * sizeof(double));
+  hy_dens_theta_int = (double *)malloc((nz + 1) * sizeof(double));
+  hy_pressure_int = (double *)malloc((nz + 1) * sizeof(double));
+
+  //Define the maximum stable time step based on an assumed maximum wind speed
+  dt = dmin(dx, dz) / max_speed * cfl;
+  //Set initial elapsed model time and output_counter to zero
+  etime = 0.;
+  output_counter = 0.;
+
+  // Display grid information
+
+  printf("nx_glob, nz_glob: %d %d\n", nx_glob, nz_glob);
+  printf("dx,dz: %lf %lf\n", dx, dz);
+  printf("dt: %lf\n", dt);
+
+  //////////////////////////////////////////////////////////////////////////
+  // Initialize the cell-averaged fluid state via Gauss-Legendre quadrature
+  //////////////////////////////////////////////////////////////////////////
+  for (k = 0; k < nz + 2 * hs; k++)
+  {
+    for (i = 0; i < nx + 2 * hs; i++)
+    {
+      //Initialize the state to zero
+      for (ll = 0; ll < NUM_VARS; ll++)
+      {
+        inds = ll * (nz + 2 * hs) * (nx + 2 * hs) + k * (nx + 2 * hs) + i;
+        state[inds] = 0.;
+      }
+      //Use Gauss-Legendre quadrature to initialize a hydrostatic balance + temperature perturbation
+      for (kk = 0; kk < nqpoints; kk++)
+      {
+        for (ii = 0; ii < nqpoints; ii++)
+        {
+          //Compute the x,z location within the global domain based on cell and quadrature index
+          x = (i_beg + i - hs + 0.5) * dx + (qpoints[ii] - 0.5) * dx;
+          z = (k_beg + k - hs + 0.5) * dz + (qpoints[kk] - 0.5) * dz;
+
+          //Set the fluid state based on the user's specification (default is injection in this example)
+          injection(x, z, r, u, w, t, hr, ht);
+
+          //Store into the fluid state array
+          inds = ID_DENS * (nz + 2 * hs) * (nx + 2 * hs) + k * (nx + 2 * hs) + i;
+          state[inds] = state[inds] + r * qweights[ii] * qweights[kk];
+          inds = ID_UMOM * (nz + 2 * hs) * (nx + 2 * hs) + k * (nx + 2 * hs) + i;
+          state[inds] = state[inds] + (r + hr) * u * qweights[ii] * qweights[kk];
+          inds = ID_WMOM * (nz + 2 * hs) * (nx + 2 * hs) + k * (nx + 2 * hs) + i;
+          state[inds] = state[inds] + (r + hr) * w * qweights[ii] * qweights[kk];
+          inds = ID_RHOT * (nz + 2 * hs) * (nx + 2 * hs) + k * (nx + 2 * hs) + i;
+          state[inds] = state[inds] + ((r + hr) * (t + ht) - hr * ht) * qweights[ii] * qweights[kk];
+        }
+      }
+      for (ll = 0; ll < NUM_VARS; ll++)
+      {
+        inds = ll * (nz + 2 * hs) * (nx + 2 * hs) + k * (nx + 2 * hs) + i;
+        state_tmp[inds] = state[inds];
+      }
+    }
+  }
+  //Compute the hydrostatic background state over vertical cell averages
+  for (k = 0; k < nz + 2 * hs; k++)
+  {
+    hy_dens_cell[k] = 0.;
+    hy_dens_theta_cell[k] = 0.;
+    for (kk = 0; kk < nqpoints; kk++)
+    {
+      z = (k_beg + k - hs + 0.5) * dz;
+
+      //Set the fluid state based on the user's specification (default is injection in this example)
+      injection(0., z, r, u, w, t, hr, ht);
+
+      hy_dens_cell[k] = hy_dens_cell[k] + hr * qweights[kk];
+      hy_dens_theta_cell[k] = hy_dens_theta_cell[k] + hr * ht * qweights[kk];
+    }
+  }
+  //Compute the hydrostatic background state at vertical cell interfaces
+  for (k = 0; k < nz + 1; k++)
+  {
+    z = (k_beg + k) * dz;
+
+    //Set the fluid state based on the user's specification (default is injection in this example)
+    injection(0., z, r, u, w, t, hr, ht);
+
+    hy_dens_int[k] = hr;
+    hy_dens_theta_int[k] = hr * ht;
+    hy_pressure_int[k] = C0 * pow((hr * ht), gamm);
+  }
+}
+
+void finalize()
+{
+  free(state);
+  free(state_tmp);
+  free(flux);
+  free(tend);
+  free(hy_dens_cell);
+  free(hy_dens_theta_cell);
+  free(hy_dens_int);
+  free(hy_dens_theta_int);
+  free(hy_pressure_int);
+}
