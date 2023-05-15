@@ -175,9 +175,11 @@ void init()
 
   // Display grid information
 
+#ifndef kernel_tuner
   printf("nx_glob, nz_glob: %d %d\n", nx_glob, nz_glob);
   printf("dx,dz: %lf %lf\n", dx, dz);
   printf("dt: %lf\n", dt);
+#endif
 
   //////////////////////////////////////////////////////////////////////////
   // Initialize the cell-averaged fluid state via Gauss-Legendre quadrature
