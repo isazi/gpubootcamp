@@ -134,11 +134,13 @@ int main(int argc, char **argv)
   }
 
   nvtxRangePushA("Total");
+#pragma tuner initialize
   init();
 
 #pragma acc data copyin(state_tmp[(nz + 2 * hs) * (nx + 2 * hs) * NUM_VARS], hy_dens_cell[nz + 2 * hs], hy_dens_theta_cell[nz + 2 * hs], hy_dens_int[nz + 1], hy_dens_theta_int[nz + 1], hy_pressure_int[nz + 1]) \
     create(flux[(nz + 1) * (nx + 1) * NUM_VARS], tend[nz * nx * NUM_VARS])                                                                                                                                        \
         copy(state [0:(nz + 2 * hs) * (nx + 2 * hs) * NUM_VARS])
+#pragma tuner stop
   {
     //Output the initial state
     //output(state, etime);
@@ -249,6 +251,7 @@ void semi_discrete_step(double *state_init, double *state_forcing, double *state
 // TODO: THREAD ME
 /////////////////////////////////////////////////
 //Apply the tendencies to the fluid state
+#pragma tuner start semi_discrete_step
 #pragma acc parallel private(inds, indt) default(present)
 #pragma acc loop collapse(3)
   for (ll = 0; ll < NUM_VARS; ll++)
@@ -263,6 +266,7 @@ void semi_discrete_step(double *state_init, double *state_forcing, double *state
       }
     }
   }
+#pragma tuner stop
 }
 
 //Compute the time tendencies of the fluid state using forcing in the x-direction
@@ -279,6 +283,7 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
   // TODO: THREAD ME
   /////////////////////////////////////////////////
   //Compute fluxes in the x-direction for each cell
+#pragma tuner start compute_tendencies_x_0
 #pragma acc parallel private(ll, s, inds, stencil, vals, d3_vals, r, u, w, t, p) default(present)
 #pragma acc loop collapse(2)
   for (k = 0; k < nz; k++)
@@ -313,11 +318,13 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
       flux[ID_RHOT * (nz + 1) * (nx + 1) + k * (nx + 1) + i] = r * u * t - hv_coef * d3_vals[ID_RHOT];
     }
   }
+#pragma tuner stop
 
 /////////////////////////////////////////////////
 // TODO: THREAD ME
 /////////////////////////////////////////////////
 //Use the fluxes to compute tendencies for each cell
+#pragma tuner start compute_tendencies_x_1
 #pragma acc parallel private(indt, indf1, indf2) default(present)
 #pragma acc  loop collapse(3)
   for (ll = 0; ll < NUM_VARS; ll++)
@@ -333,6 +340,7 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
       }
     }
   }
+#pragma tuner stop
 }
 
 //Compute the time tendencies of the fluid state using forcing in the z-direction
@@ -349,6 +357,7 @@ void compute_tendencies_z(double *state, double *flux, double *tend)
 // TODO: THREAD ME
 /////////////////////////////////////////////////
 //Compute fluxes in the x-direction for each cell
+#pragma tuner start compute_tendencies_z_0
 #pragma acc parallel private(ll, s, inds, stencil, vals, d3_vals, r, u, w, t, p) default(present)
 #pragma acc loop collapse(2)
   for (k = 0; k < nz + 1; k++)
@@ -383,11 +392,13 @@ void compute_tendencies_z(double *state, double *flux, double *tend)
       flux[ID_RHOT * (nz + 1) * (nx + 1) + k * (nx + 1) + i] = r * w * t - hv_coef * d3_vals[ID_RHOT];
     }
   }
+#pragma tuner stop
 
 /////////////////////////////////////////////////
 // TODO: THREAD ME
 /////////////////////////////////////////////////
 //Use the fluxes to compute tendencies for each cell
+#pragma tuner start compute_tendencies_z_1
 #pragma acc parallel private(indt, indf1, indf2) default(present)
 #pragma acc loop collapse(3)
   for (ll = 0; ll < NUM_VARS; ll++)
@@ -408,6 +419,7 @@ void compute_tendencies_z(double *state, double *flux, double *tend)
       }
     }
   }
+#pragma tuner stop
 }
 
 void set_halo_values_x(double *state)
@@ -415,6 +427,7 @@ void set_halo_values_x(double *state)
   int k, ll, ind_r, ind_u, ind_t, i;
   double z;
 
+#pragma tuner start set_halo_values_x
 #pragma acc parallel default(present)
 #pragma acc loop collapse(2)
   for (ll = 0; ll < NUM_VARS; ll++)
@@ -427,6 +440,7 @@ void set_halo_values_x(double *state)
       state[ll * (nz + 2 * hs) * (nx + 2 * hs) + (k + hs) * (nx + 2 * hs) + nx + hs + 1] = state[ll * (nz + 2 * hs) * (nx + 2 * hs) + (k + hs) * (nx + 2 * hs) + hs + 1];
     }
   }
+#pragma tuner stop
   ////////////////////////////////////////////////////
 
   if (myrank == 0)
@@ -459,6 +473,7 @@ void set_halo_values_z(double *state)
 /////////////////////////////////////////////////
 // TODO: THREAD ME
 /////////////////////////////////////////////////
+#pragma tuner start set_halo_values_z
 #pragma acc parallel private(x, xloc, mnt_deriv) default(present)
 #pragma acc  loop
   for (ll = 0; ll < NUM_VARS; ll++)
@@ -481,6 +496,7 @@ void set_halo_values_z(double *state)
       }
     }
   }
+#pragma tuner stop
 }
 
 void init()
