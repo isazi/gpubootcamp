@@ -323,7 +323,7 @@ void compute_tendencies_z(double *state, double *flux, double *tend)
         tend[indt] = -(flux[indf2] - flux[indf1]) / dz;
         if (ll == ID_WMOM)
         {
-          inds = ID_DENS * (nz + 2 * hs) * (nx + 2 * hs) + (k + hs) * (nx + 2 * hs) + i + hs;
+          int nds = ID_DENS * (nz + 2 * hs) * (nx + 2 * hs) + (k + hs) * (nx + 2 * hs) + i + hs;
           tend[indt] = tend[indt] - state[inds] * grav;
         }
       }
