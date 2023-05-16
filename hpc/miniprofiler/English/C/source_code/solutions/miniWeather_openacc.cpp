@@ -155,7 +155,7 @@ void semi_discrete_step(double *state_init, double *state_forcing, double *state
   double * state_init = state;
   double * state_out = state_tmp;
 #endif
-#pragma acc parallel num_gangs(ngangs) vector_length(nthreads) default(present)
+#pragma acc parallel num_gangs(ngangs) vector_length(vlength) default(present)
 #pragma acc loop collapse(3)
   for (int ll = 0; ll < NUM_VARS; ll++)
   {
@@ -186,7 +186,7 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
   // TODO: THREAD ME
   /////////////////////////////////////////////////
   //Compute fluxes in the x-direction for each cell
-#pragma acc parallel num_gangs(ngangs) vector_length(nthreads) default(present)
+#pragma acc parallel num_gangs(ngangs) vector_length(vlength) default(present)
 #pragma acc loop collapse(2)
   for (int k = 0; k < nz; k++)
   {
@@ -231,7 +231,7 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
 /////////////////////////////////////////////////
 //Use the fluxes to compute tendencies for each cell
 #pragma tuner start compute_tendencies_x_1
-#pragma acc parallel num_gangs(ngangs) vector_length(nthreads) default(present)
+#pragma acc parallel num_gangs(ngangs) vector_length(vlength) default(present)
 #pragma acc  loop collapse(3)
   for (int ll = 0; ll < NUM_VARS; ll++)
   {

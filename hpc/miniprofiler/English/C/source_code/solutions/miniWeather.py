@@ -24,7 +24,7 @@ for function in signatures.keys():
 
     tune_params = dict()
     tune_params["ngangs"] = [2**i for i in range(0, 13)]
-    tune_params["nthreads"] = [2**i for i in range(0, 11)]
+    tune_params["vlength"] = [2**i for i in range(0, 11)]
 
     tune_kernel(
         function,
