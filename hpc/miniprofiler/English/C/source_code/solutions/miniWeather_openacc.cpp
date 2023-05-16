@@ -186,9 +186,6 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
   // TODO: THREAD ME
   /////////////////////////////////////////////////
   //Compute fluxes in the x-direction for each cell
-#ifdef kernel_tuner
-  double * flux = flux;
-#endif
 #pragma acc parallel num_gangs(ngangs) vector_length(nthreads) default(present)
 #pragma acc loop collapse(2)
   for (int k = 0; k < nz; k++)
@@ -234,9 +231,6 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
 /////////////////////////////////////////////////
 //Use the fluxes to compute tendencies for each cell
 #pragma tuner start compute_tendencies_x_1
-#ifdef kernel_tuner
-  double * tend = tend;
-#endif
 #pragma acc parallel num_gangs(ngangs) vector_length(nthreads) default(present)
 #pragma acc  loop collapse(3)
   for (int ll = 0; ll < NUM_VARS; ll++)
