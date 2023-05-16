@@ -178,8 +178,7 @@ void semi_discrete_step(double *state_init, double *state_forcing, double *state
 //Then, compute the tendencies using those fluxes
 void compute_tendencies_x(double *state, double *flux, double *tend)
 {
-  int i, k, ll, s, inds, indf1, indf2, indt;
-  double r, u, w, t, p, stencil[4], d3_vals[NUM_VARS], vals[NUM_VARS], hv_coef;
+  double hv_coef;
   //Compute the hyperviscosity coeficient
   hv_coef = -hv_beta * dx / (16 * dt);
   /////////////////////////////////////////////////
@@ -187,18 +186,25 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
   /////////////////////////////////////////////////
   //Compute fluxes in the x-direction for each cell
 #pragma tuner start compute_tendencies_x_0
-#pragma acc parallel private(ll, s, inds, stencil, vals, d3_vals, r, u, w, t, p) default(present)
+#ifdef kernel_tuner
+  double * flux = (double *)malloc((nx + 1) * (nz + 1) * NUM_VARS * sizeof(double));
+#endif
+#pragma acc parallel default(present)
 #pragma acc loop collapse(2)
-  for (k = 0; k < nz; k++)
+  for (int k = 0; k < nz; k++)
   {
-    for (i = 0; i < nx + 1; i++)
+    for (int i = 0; i < nx + 1; i++)
     {
+      double r, u, w, t, p, vals[NUM_VARS], d3_vals[NUM_VARS];
+
       //Use fourth-order interpolation from four cell averages to compute the value at the interface in question
-      for (ll = 0; ll < NUM_VARS; ll++)
+      for (int ll = 0; ll < NUM_VARS; ll++)
       {
-        for (s = 0; s < sten_size; s++)
+        double stencil[4];
+
+        for (int s = 0; s < sten_size; s++)
         {
-          inds = ll * (nz + 2 * hs) * (nx + 2 * hs) + (k + hs) * (nx + 2 * hs) + i + s;
+          int inds = ll * (nz + 2 * hs) * (nx + 2 * hs) + (k + hs) * (nx + 2 * hs) + i + s;
           stencil[s] = state[inds];
         }
         //Fourth-order-accurate interpolation of the state
@@ -228,7 +234,7 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
 /////////////////////////////////////////////////
 //Use the fluxes to compute tendencies for each cell
 #pragma tuner start compute_tendencies_x_1
-#pragma acc parallel private(indt, indf1, indf2) default(present)
+#pragma acc parallel default(present)
 #pragma acc  loop collapse(3)
   for (ll = 0; ll < NUM_VARS; ll++)
   {
@@ -236,6 +242,8 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
     {
       for (i = 0; i < nx; i++)
       {
+        int indf1, indf2, indt;
+
         indt = ll * nz * nx + k * nx + i;
         indf1 = ll * (nz + 1) * (nx + 1) + k * (nx + 1) + i;
         indf2 = ll * (nz + 1) * (nx + 1) + k * (nx + 1) + i + 1;
