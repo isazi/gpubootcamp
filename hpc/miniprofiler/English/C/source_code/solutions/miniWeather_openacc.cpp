@@ -257,27 +257,27 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
 //Then, compute the tendencies using those fluxes
 void compute_tendencies_z(double *state, double *flux, double *tend)
 {
-  int i, k, ll, s, inds, indf1, indf2, indt;
-  double r, u, w, t, p, stencil[4], d3_vals[NUM_VARS], vals[NUM_VARS], hv_coef;
+#pragma tuner start compute_tendencies_z_0
   //Compute the hyperviscosity coeficient
-  hv_coef = -hv_beta * dx / (16 * dt);
+  double hv_coef = -hv_beta * dx / (16 * dt);
 /////////////////////////////////////////////////
 // TODO: THREAD ME
 /////////////////////////////////////////////////
 //Compute fluxes in the x-direction for each cell
-#pragma tuner start compute_tendencies_z_0
-#pragma acc parallel private(ll, s, inds, stencil, vals, d3_vals, r, u, w, t, p) default(present)
+#pragma acc parallel num_gangs(ngangs) vector_length(vlength) default(present)
 #pragma acc loop collapse(2)
-  for (k = 0; k < nz + 1; k++)
+  for (int k = 0; k < nz + 1; k++)
   {
-    for (i = 0; i < nx; i++)
+    for (int i = 0; i < nx; i++)
     {
+      double r, u, w, t, p, d3_vals[NUM_VARS], vals[NUM_VARS];
       //Use fourth-order interpolation from four cell averages to compute the value at the interface in question
-      for (ll = 0; ll < NUM_VARS; ll++)
+      for (int ll = 0; ll < NUM_VARS; ll++)
       {
-        for (s = 0; s < sten_size; s++)
+        double stencil[4];
+        for (int s = 0; s < sten_size; s++)
         {
-          inds = ll * (nz + 2 * hs) * (nx + 2 * hs) + (k + s) * (nx + 2 * hs) + i + hs;
+          int inds = ll * (nz + 2 * hs) * (nx + 2 * hs) + (k + s) * (nx + 2 * hs) + i + hs;
           stencil[s] = state[inds];
         }
         //Fourth-order-accurate interpolation of the state
@@ -307,14 +307,16 @@ void compute_tendencies_z(double *state, double *flux, double *tend)
 /////////////////////////////////////////////////
 //Use the fluxes to compute tendencies for each cell
 #pragma tuner start compute_tendencies_z_1
-#pragma acc parallel private(indt, indf1, indf2) default(present)
+#pragma acc parallel num_gangs(ngangs) vector_length(vlength) default(present)
 #pragma acc loop collapse(3)
-  for (ll = 0; ll < NUM_VARS; ll++)
+  for (int ll = 0; ll < NUM_VARS; ll++)
   {
-    for (k = 0; k < nz; k++)
+    for (int k = 0; k < nz; k++)
     {
-      for (i = 0; i < nx; i++)
+      for (int i = 0; i < nx; i++)
       {
+        int indf1, indf2, indt;
+
         indt = ll * nz * nx + k * nx + i;
         indf1 = ll * (nz + 1) * (nx + 1) + (k) * (nx + 1) + i;
         indf2 = ll * (nz + 1) * (nx + 1) + (k + 1) * (nx + 1) + i;
@@ -336,11 +338,11 @@ void set_halo_values_x(double *state)
   double z;
 
 #pragma tuner start set_halo_values_x
-#pragma acc parallel default(present)
+#pragma acc parallel num_gangs(ngangs) vector_length(vlength) default(present)
 #pragma acc loop collapse(2)
-  for (ll = 0; ll < NUM_VARS; ll++)
+  for (int ll = 0; ll < NUM_VARS; ll++)
   {
-    for (k = 0; k < nz; k++)
+    for (int k = 0; k < nz; k++)
     {
       state[ll * (nz + 2 * hs) * (nx + 2 * hs) + (k + hs) * (nx + 2 * hs) + 0] = state[ll * (nz + 2 * hs) * (nx + 2 * hs) + (k + hs) * (nx + 2 * hs) + nx + hs - 2];
       state[ll * (nz + 2 * hs) * (nx + 2 * hs) + (k + hs) * (nx + 2 * hs) + 1] = state[ll * (nz + 2 * hs) * (nx + 2 * hs) + (k + hs) * (nx + 2 * hs) + nx + hs - 1];
@@ -382,11 +384,11 @@ void set_halo_values_z(double *state)
 // TODO: THREAD ME
 /////////////////////////////////////////////////
 #pragma tuner start set_halo_values_z
-#pragma acc parallel private(x, xloc, mnt_deriv) default(present)
+#pragma acc parallel num_gangs(ngangs) vector_length(vlength) default(present)
 #pragma acc  loop
-  for (ll = 0; ll < NUM_VARS; ll++)
+  for (int ll = 0; ll < NUM_VARS; ll++)
   {
-    for (i = 0; i < nx + 2 * hs; i++)
+    for (int i = 0; i < nx + 2 * hs; i++)
     {
       if (ll == ID_WMOM)
       {
