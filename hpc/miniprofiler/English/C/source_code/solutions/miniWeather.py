@@ -26,6 +26,7 @@ for function in signatures.keys():
     tune_params["ngangs"] = [2**i for i in range(0, 13)]
     tune_params["vlength"] = [2**i for i in range(0, 11)]
 
+    print(f"Tuning {function}")
     tune_kernel(
         function,
         kernel_string,
