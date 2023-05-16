@@ -378,7 +378,6 @@ void set_halo_values_x(double *state)
 void set_halo_values_z(double *state)
 {
 #pragma tuner start set_halo_values_z
-  const double mnt_width = xlen / 8;
 /////////////////////////////////////////////////
 // TODO: THREAD ME
 /////////////////////////////////////////////////
