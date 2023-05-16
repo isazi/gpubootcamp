@@ -377,15 +377,13 @@ void set_halo_values_x(double *state)
 //decomposition in the vertical direction.
 void set_halo_values_z(double *state)
 {
-  int i, ll;
+#pragma tuner start set_halo_values_z
   const double mnt_width = xlen / 8;
-  double x, xloc, mnt_deriv;
 /////////////////////////////////////////////////
 // TODO: THREAD ME
 /////////////////////////////////////////////////
-#pragma tuner start set_halo_values_z
 #pragma acc parallel num_gangs(ngangs) vector_length(vlength) default(present)
-#pragma acc  loop
+#pragma acc loop
   for (int ll = 0; ll < NUM_VARS; ll++)
   {
     for (int i = 0; i < nx + 2 * hs; i++)
