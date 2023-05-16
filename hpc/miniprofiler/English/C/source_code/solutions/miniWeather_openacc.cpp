@@ -178,6 +178,7 @@ void semi_discrete_step(double *state_init, double *state_forcing, double *state
 //Then, compute the tendencies using those fluxes
 void compute_tendencies_x(double *state, double *flux, double *tend)
 {
+#pragma tuner start compute_tendencies_x_0
   double hv_coef;
   //Compute the hyperviscosity coeficient
   hv_coef = -hv_beta * dx / (16 * dt);
@@ -185,9 +186,8 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
   // TODO: THREAD ME
   /////////////////////////////////////////////////
   //Compute fluxes in the x-direction for each cell
-#pragma tuner start compute_tendencies_x_0
 #ifdef kernel_tuner
-  double * flux = (double *)malloc((nx + 1) * (nz + 1) * NUM_VARS * sizeof(double));
+  double * flux = flux;
 #endif
 #pragma acc parallel num_gangs(ngangs) vector_length(nthreads) default(present)
 #pragma acc loop collapse(2)
@@ -234,13 +234,16 @@ void compute_tendencies_x(double *state, double *flux, double *tend)
 /////////////////////////////////////////////////
 //Use the fluxes to compute tendencies for each cell
 #pragma tuner start compute_tendencies_x_1
-#pragma acc parallel default(present)
+#ifdef kernel_tuner
+  double * tend = tend;
+#endif
+#pragma acc parallel num_gangs(ngangs) vector_length(nthreads) default(present)
 #pragma acc  loop collapse(3)
-  for (ll = 0; ll < NUM_VARS; ll++)
+  for (int ll = 0; ll < NUM_VARS; ll++)
   {
-    for (k = 0; k < nz; k++)
+    for (int k = 0; k < nz; k++)
     {
-      for (i = 0; i < nx; i++)
+      for (int i = 0; i < nx; i++)
       {
         int indf1, indf2, indt;
 
